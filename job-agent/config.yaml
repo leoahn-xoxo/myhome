@@ -1,0 +1,115 @@
+# ─────────────────────────────────────────────────────────────
+#  채용 취합 에이전트 설정
+#  "나에게 맞는" 기준 = 안정호(Leo Ahn) 프로필 기반
+#  키워드/가중치만 바꾸면 다른 사람에게도 재사용 가능
+# ─────────────────────────────────────────────────────────────
+
+# 각 소스에 던질 검색어 (한국어 + 영어)
+queries:
+  - "마케팅 팀장"
+  - "그로스 마케팅"
+  - "퍼포먼스 마케팅"
+  - "브랜드 마케팅"
+  - "CRM 마케팅"
+  - "마케팅 리드"
+  - "growth marketing"
+  - "performance marketing"
+  - "head of marketing"
+
+# 소스별 on/off (인증/키가 없으면 자동으로 건너뜀)
+sources:
+  wanted: true
+  linkedin: true
+  saramin: true      # SARAMIN_API_KEY 있으면 공식 API, 없으면 건너뜀
+  jobkorea: true     # best-effort 스크래핑(차단 시 자동 skip)
+  remember: true     # 공개 API 없음 — 안내만, 결과 0
+
+# 결과 필터
+filters:
+  min_score: 4.0          # 이 점수 미만은 버림
+  max_results: 30         # 다이제스트 최대 공고 수
+  locations_preferred:    # 들어있으면 가산점 (필수는 아님)
+    - "서울"
+    - "원격"
+    - "remote"
+    - "재택"
+  exclude_keywords:       # 제목에 있으면 제외 (영업직/무관 직무 등)
+    - "영업관리"
+    - "텔레마케팅"
+    - "콜센터"
+    - "아르바이트"
+    - "인턴"
+
+# 적합도 채점 키워드 (가중치)
+scoring:
+  # 핵심 직무 (제목/본문에 있으면 강한 매칭)
+  core:
+    weight: 3.0
+    keywords:
+      - 마케팅
+      - marketing
+      - 그로스
+      - growth
+      - 퍼포먼스
+      - performance
+      - 브랜드
+      - brand
+      - crm
+      - 리테일미디어
+      - retail media
+      - rmn
+      - 디지털마케팅
+  # 도메인 보너스 (안정호님 경험과 겹치는 영역)
+  domain:
+    weight: 1.0
+    keywords:
+      - 이커머스
+      - 커머스
+      - commerce
+      - 앱
+      - app
+      - 핀테크
+      - fintech
+      - 미디어
+      - media
+      - 광고
+      - 데이터
+      - data
+      - ai
+      - 자동화
+      - automation
+      - 캠페인
+      - campaign
+      - 리텐션
+      - retention
+      - 그로스해킹
+  # 시니어/리드 신호 (레벨 판별 + 가산점)
+  senior:
+    weight: 2.0
+    keywords:
+      - 팀장
+      - 리드
+      - lead
+      - head
+      - 총괄
+      - 매니저
+      - manager
+      - 디렉터
+      - director
+      - 본부장
+      - 실장
+  # 임원/C레벨 신호
+  executive:
+    weight: 2.0
+    keywords:
+      - cmo
+      - 임원
+      - vp
+      - "vice president"
+      - 부사장
+      - 마케팅본부장
+      - chief
+  # 제목 가중 배수 (제목에서 매칭되면 더 크게 반영)
+  title_multiplier: 2.0
+  # 최신 공고 가산점
+  recency_bonus: 1.5   # 최근 3일 이내
