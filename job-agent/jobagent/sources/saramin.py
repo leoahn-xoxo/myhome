@@ -1,71 +1,57 @@
-"""사람인(Saramin) 공식 오픈 API.
+"""사람인(Saramin) — 로그인 세션으로 검색 결과 페이지를 파싱.
 
-문서: https://oapi.saramin.co.kr/guide  (무료 발급)
-SARAMIN_API_KEY 환경변수가 있으면 사용하고, 없으면 조용히 건너뛴다.
-(키 없이 HTML 스크래핑은 차단/약관 이슈가 커서 공식 API만 지원.)
+로그인 상태면 맞춤 정보가 반영되고 차단이 줄어든다. 공식 오픈 API 대신
+브라우저로 직접 본다(키 불필요).
 """
 from __future__ import annotations
 
 import logging
-import os
+from urllib.parse import quote
 
 from ..models import Job
-from .base import get
+from .base import safe_text, settle
 
 log = logging.getLogger("jobagent.sources.saramin")
 
-API = "https://oapi.saramin.co.kr/job-search"
+SEARCH = "https://www.saramin.co.kr/zf_user/search/recruit?searchType=search&searchword={q}&sort=RD"
 
 
-def fetch(queries: list[str], limit: int = 20, **_) -> list[Job]:
-    key = os.environ.get("SARAMIN_API_KEY")
-    if not key:
-        log.info("saramin: SARAMIN_API_KEY 없음 → 건너뜀 (README의 발급 안내 참고)")
-        return []
-
+def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    for q in queries:
-        params = {
-            "access-key": key,
-            "keywords": q,
-            "sort": "pd",          # 등록일순
-            "count": str(limit),
-            "fields": "posting-date,expiration-date",
-        }
-        try:
-            resp = get(API, params=params, headers={"Accept": "application/json"})
-            resp.raise_for_status()
-            items = resp.json().get("jobs", {}).get("job", [])
-        except Exception as e:  # noqa: BLE001
-            log.warning("saramin 검색 실패 (%s): %s", q, e)
-            continue
+    page = browser.new_page()
+    try:
+        for q in queries:
+            try:
+                page.goto(SEARCH.format(q=quote(q)), wait_until="domcontentloaded", timeout=25000)
+                settle(page)
+            except Exception as e:  # noqa: BLE001
+                log.warning("saramin 이동 실패 (%s): %s", q, e)
+                continue
 
-        if isinstance(items, dict):
-            items = [items]
-        for it in items:
-            company = ((it.get("company") or {}).get("detail") or {}).get("name", "")
-            position = it.get("position") or {}
-            title = (position.get("title") or "")
-            loc = ((position.get("location") or {}).get("name") or "")
-            ind = ((position.get("industry") or {}).get("name") or "")
-            jobs.append(
-                Job(
-                    source="saramin",
-                    external_id=str(it.get("id", "")),
-                    title=title,
-                    company=company,
-                    url=it.get("url", ""),
-                    location=loc,
-                    posted=_to_date(it.get("posting-date")),
-                    description=f"{title} {ind}",
+            items = page.query_selector_all(".item_recruit, .list_item, [class*='item_recruit']")
+            for it in items[:limit]:
+                title_el = it.query_selector(".job_tit a, h2.job_tit a, .str_tit")
+                comp_el = it.query_selector(".corp_name a, .company_nm a, .corp_name")
+                cond_el = it.query_selector(".job_condition")
+                date_el = it.query_selector(".job_date .date, .support_detail .date")
+                href = (title_el.get_attribute("href") if title_el else "") or ""
+                title = safe_text(title_el)
+                if not (href and title):
+                    continue
+                if href.startswith("/"):
+                    href = "https://www.saramin.co.kr" + href
+                jobs.append(
+                    Job(
+                        source="saramin",
+                        title=title,
+                        company=safe_text(comp_el),
+                        url=href.split("?")[0] if "rec_idx" not in href else href,
+                        location=safe_text(cond_el).split("\n")[0],
+                        posted=safe_text(date_el) or None,
+                        description=f"{title} {safe_text(cond_el)}",
+                    )
                 )
-            )
+    finally:
+        page.close()
     log.info("saramin: %d건 수집", len(jobs))
     return jobs
-
-
-def _to_date(value):
-    # 사람인은 RFC822 형태(예: "2024-05-01T09:00:00+09:00")로 줄 때가 많다.
-    if not value:
-        return None
-    return value[:10]

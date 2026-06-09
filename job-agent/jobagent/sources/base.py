@@ -1,24 +1,35 @@
-"""소스 공통 유틸."""
+"""소스 공통 유틸 (Playwright 기반).
+
+각 소스는 fetch(browser, queries, limit) 시그니처를 가진다. browser 는
+jobagent.browser.Browser 인스턴스로 .new_page() / .request 를 제공한다.
+"""
 from __future__ import annotations
 
 import logging
 
-import requests
-
 log = logging.getLogger("jobagent.sources")
 
-# 대부분의 사이트는 봇 차단이 있어 일반 브라우저 UA를 흉내 낸다.
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-    ),
-    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+# 로그인 세션을 보유한 사이트 도메인 → 최초 로그인 시 방문할 URL
+LOGIN_URLS = {
+    "wanted": "https://www.wanted.co.kr/",
+    "linkedin": "https://www.linkedin.com/jobs/",
+    "saramin": "https://www.saramin.co.kr/",
+    "jobkorea": "https://www.jobkorea.co.kr/",
+    "remember": "https://career.rememberapp.co.kr/",
 }
 
 
-def get(url: str, *, params=None, headers=None, timeout=15) -> requests.Response:
-    h = dict(HEADERS)
-    if headers:
-        h.update(headers)
-    return requests.get(url, params=params, headers=h, timeout=timeout)
+def safe_text(el) -> str:
+    try:
+        return (el.inner_text() or "").strip() if el else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def settle(page, ms: int = 1500):
+    """동적 로딩 대기."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=8000)
+    except Exception:  # noqa: BLE001
+        pass
+    page.wait_for_timeout(ms)

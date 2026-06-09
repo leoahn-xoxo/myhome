@@ -1,61 +1,70 @@
-"""링크드인(LinkedIn) 게스트 채용 검색.
+"""링크드인(LinkedIn) — 로그인 세션으로 채용 검색 페이지를 직접 파싱.
 
-로그인 없이 접근 가능한 게스트 API:
-  https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search
-HTML 카드 목록을 돌려주므로 BeautifulSoup으로 파싱한다. 레이트리밋이 있어
-요청 간 약간의 간격을 두고, 실패해도 다른 소스에 영향이 없도록 처리한다.
+로그인 상태면 차단 없이 검색·추천 공고가 보인다. DOM은 자주 바뀌므로
+여러 셀렉터를 관대하게 시도하고, 실패해도 0건으로 빠진다.
 """
 from __future__ import annotations
 
 import logging
-import time
-
-from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 from ..models import Job
-from .base import get
+from .base import safe_text, settle
 
 log = logging.getLogger("jobagent.sources.linkedin")
 
-API = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 
-
-def fetch(queries: list[str], location: str = "South Korea", limit: int = 20, **_) -> list[Job]:
+def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    for q in queries:
-        params = {"keywords": q, "location": location, "start": "0", "f_TPR": "r604800"}
-        try:
-            resp = get(API, params=params)
-            if resp.status_code != 200:
-                log.warning("linkedin %s -> HTTP %s", q, resp.status_code)
-                continue
-            soup = BeautifulSoup(resp.text, "html.parser")
-        except Exception as e:  # noqa: BLE001
-            log.warning("linkedin 검색 실패 (%s): %s", q, e)
-            continue
-
-        cards = soup.select("li")[:limit]
-        for card in cards:
-            title_el = card.select_one("h3.base-search-card__title")
-            company_el = card.select_one("h4.base-search-card__subtitle")
-            link_el = card.select_one("a.base-card__full-link")
-            loc_el = card.select_one(".job-search-card__location")
-            date_el = card.select_one("time")
-            if not (title_el and link_el):
-                continue
-            url = link_el.get("href", "").split("?")[0]
-            jobs.append(
-                Job(
-                    source="linkedin",
-                    external_id=url.rstrip("/").split("-")[-1],
-                    title=title_el.get_text(strip=True),
-                    company=company_el.get_text(strip=True) if company_el else "",
-                    url=url,
-                    location=loc_el.get_text(strip=True) if loc_el else "",
-                    posted=date_el.get("datetime") if date_el else None,
-                    description=title_el.get_text(strip=True),
-                )
+    page = browser.new_page()
+    try:
+        for q in queries:
+            url = (
+                "https://www.linkedin.com/jobs/search/?"
+                f"keywords={quote(q)}&location={quote('South Korea')}&f_TPR=r604800"
             )
-        time.sleep(1.0)  # 레이트리밋 회피
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                settle(page)
+            except Exception as e:  # noqa: BLE001
+                log.warning("linkedin 이동 실패 (%s): %s", q, e)
+                continue
+
+            cards = page.query_selector_all(
+                ".job-card-container, li.jobs-search-results__list-item, "
+                "div.base-card, li.scaffold-layout__list-item"
+            )
+            for card in cards[:limit]:
+                link = card.query_selector("a.job-card-container__link, a.base-card__full-link, a")
+                title_el = card.query_selector(
+                    ".job-card-list__title, .base-search-card__title, "
+                    "[class*='job-card-list__title']"
+                )
+                company_el = card.query_selector(
+                    ".job-card-container__primary-description, "
+                    ".base-search-card__subtitle, [class*='subtitle']"
+                )
+                loc_el = card.query_selector(
+                    ".job-card-container__metadata-item, .job-search-card__location"
+                )
+                href = (link.get_attribute("href") if link else "") or ""
+                title = safe_text(title_el) or safe_text(link)
+                if not (href and title):
+                    continue
+                if href.startswith("/"):
+                    href = "https://www.linkedin.com" + href
+                jobs.append(
+                    Job(
+                        source="linkedin",
+                        external_id=href.split("/view/")[-1].split("/")[0][:24],
+                        title=title,
+                        company=safe_text(company_el),
+                        url=href.split("?")[0],
+                        location=safe_text(loc_el),
+                        description=title,
+                    )
+                )
+    finally:
+        page.close()
     log.info("linkedin: %d건 수집", len(jobs))
     return jobs

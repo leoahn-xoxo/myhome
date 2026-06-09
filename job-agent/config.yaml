@@ -16,13 +16,21 @@ queries:
   - "performance marketing"
   - "head of marketing"
 
-# 소스별 on/off (인증/키가 없으면 자동으로 건너뜀)
+# 로그인된 크롬 세션 설정 (A안: Playwright + 실제/전용 프로필)
+browser:
+  user_data_dir: auto   # auto = 전용 자동화 프로필(권장).
+                        # 실제 크롬 프로필을 쓰려면 경로 지정 + 크롬 완전 종료 필요.
+                        # 예) "C:/Users/<이름>/AppData/Local/Google/Chrome/User Data"
+  channel: chrome       # 설치된 Chrome 사용(별도 다운로드 불필요)
+  headless: true        # 일일 실행은 true, --login/--headed 시 자동으로 창 표시
+
+# 소스별 on/off — 모두 로그인된 크롬으로 직접 수집
 sources:
   wanted: true
-  linkedin: true
-  saramin: true      # SARAMIN_API_KEY 있으면 공식 API, 없으면 건너뜀
-  jobkorea: true     # best-effort 스크래핑(차단 시 자동 skip)
-  remember: true     # 공개 API 없음 — 안내만, 결과 0
+  linkedin: true        # 로그인 시 차단 우회 + 추천 공고
+  saramin: true         # 로그인 시 맞춤 정보 반영
+  jobkorea: true
+  remember: true        # 로그인 필수 — career.rememberapp.co.kr 추천 포지션
 
 # 결과 필터
 filters:
