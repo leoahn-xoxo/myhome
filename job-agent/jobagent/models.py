@@ -30,6 +30,10 @@ class Job:
     score: float = 0.0
     level: str = ""                  # 신규/주니어, 팀장·리드, 임원·C레벨
     matched_keywords: list = field(default_factory=list)
+    years_required: Optional[int] = None   # 공고가 요구하는 최소 경력(년)
+    deadline: Optional[str] = None         # 마감일 ISO(YYYY-MM-DD)
+    days_left: Optional[int] = None        # 마감까지 남은 일수
+    flags: list = field(default_factory=list)  # 마감임박/경력적합/스타트업/대기업/과스펙
 
     @property
     def key(self) -> str:
@@ -51,5 +55,9 @@ class Job:
             "score": round(self.score, 1),
             "level": self.level,
             "matched_keywords": self.matched_keywords,
+            "years_required": self.years_required,
+            "deadline": self.deadline,
+            "days_left": self.days_left,
+            "flags": self.flags,
             "key": self.key,
         }

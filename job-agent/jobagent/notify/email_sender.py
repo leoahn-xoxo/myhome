@@ -28,11 +28,39 @@ def _level_color(level: str) -> str:
     }.get(level, "#888880")
 
 
+_FLAG_STYLE = {
+    "마감임박": "#E0533D",
+    "경력적합": "#3FA34D",
+    "스타트업": "#4C8FC9",
+    "대기업": "#8A63D2",
+    "과스펙": "#999",
+}
+
+
+def _flag_badges(job: Job) -> str:
+    out = []
+    for f in job.flags:
+        out.append(
+            f'<span style="background:{_FLAG_STYLE.get(f, "#999")};color:#fff;'
+            f'padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px;">{f}</span>'
+        )
+    if job.days_left is not None and job.days_left >= 0:
+        out.append(
+            f'<span style="color:#E0533D;font-size:11px;font-weight:600;">D-{job.days_left}</span>'
+        )
+    if job.years_required:
+        out.append(
+            f'<span style="color:#888;font-size:11px;">경력 {job.years_required}년+</span>'
+        )
+    return " ".join(out)
+
+
 def render_html(jobs: list[Job]) -> str:
     today = date.today().isoformat()
     rows = []
     for i, j in enumerate(jobs, 1):
         kw = ", ".join(j.matched_keywords[:6])
+        badges = _flag_badges(j)
         rows.append(
             f"""
             <tr style="border-bottom:1px solid #eee;">
@@ -42,6 +70,7 @@ def render_html(jobs: list[Job]) -> str:
                   {escape(j.title)}</a><br>
                 <span style="color:#666;font-size:13px;">{escape(j.company or '—')}
                   · {escape(j.location or '위치 미상')}</span><br>
+                <div style="margin:4px 0 2px;">{badges}</div>
                 <span style="color:#999;font-size:12px;">키워드: {escape(kw)}</span>
               </td>
               <td style="padding:10px 8px;text-align:center;">

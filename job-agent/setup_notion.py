@@ -47,7 +47,20 @@ SCHEMA = {
     "지역": {"rich_text": {}},
     "URL": {"url": {}},
     "등록일": {"date": {}},
+    "마감일": {"date": {}},
+    "연차요구": {"number": {"format": "number"}},
     "키워드": {"multi_select": {}},
+    "플래그": {
+        "multi_select": {
+            "options": [
+                {"name": "마감임박", "color": "red"},
+                {"name": "경력적합", "color": "green"},
+                {"name": "스타트업", "color": "blue"},
+                {"name": "대기업", "color": "purple"},
+                {"name": "과스펙", "color": "gray"},
+            ]
+        }
+    },
     "상태": {
         "select": {
             "options": [

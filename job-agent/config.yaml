@@ -48,6 +48,13 @@ filters:
     - "아르바이트"
     - "인턴"
 
+# 지원자 프로필 (채용 가능성 계산용)
+profile:
+  years_experience: 17       # 안정호님 총 경력
+  # 가장 자연스러운 타겟 연차대(이 안이면 '경력적합' 가산, 너무 낮으면 과스펙)
+  sweet_spot_min: 8
+  sweet_spot_max: 20
+
 # 적합도 채점 키워드 (가중치)
 scoring:
   # 핵심 직무 (제목/본문에 있으면 강한 매칭)
@@ -121,3 +128,53 @@ scoring:
   title_multiplier: 2.0
   # 최신 공고 가산점
   recency_bonus: 1.5   # 최근 3일 이내
+
+  # 경력 연차 적합도 (채용 가능성의 핵심 신호)
+  years:
+    fit_bonus: 4.0            # 요구연차가 sweet spot 안 → 강한 가산
+    near_bonus: 2.0           # sweet spot 근처(±3년)
+    overqualified_penalty: 3.0   # 요구연차가 sweet_spot_min보다 한참 낮음(주니어 공고)
+    underqualified_penalty: 2.0  # 요구연차가 내 경력보다 높음(언더스펙)
+
+  # 마감 임박 처리 (정보용 가산 — 빨리 움직이라는 신호)
+  deadline:
+    imminent_days: 3         # 마감까지 이 일수 이하면 '마감임박' 플래그
+    imminent_bonus: 1.0
+
+  # 회사 규모/유형 가중치
+  company:
+    enterprise_bonus: 2.0    # 아래 known_enterprises 매칭 → '대기업' 플래그
+    startup_bonus: 1.5       # startup_signals 매칭 → '스타트업' 플래그
+    known_enterprises:       # 안정호님 경험과 잘 맞는 대형/유명 기업
+      - 삼성
+      - 롯데
+      - 신세계
+      - 현대
+      - 쿠팡
+      - 네이버
+      - 카카오
+      - 토스
+      - 배달의민족
+      - 우아한형제들
+      - 무신사
+      - 컬리
+      - 당근
+      - 다나와
+      - 11번가
+      - gs
+      - cj
+      - kt
+      - sk
+      - lg
+      - 야놀자
+      - 직방
+    startup_signals:         # 스타트업/그로스 단계 신호
+      - 시리즈
+      - series
+      - 스타트업
+      - startup
+      - 유니콘
+      - 투자유치
+      - 그로스
+      - pre-a
+      - 시드

@@ -62,13 +62,26 @@ def _page_props(job: Job) -> dict:
         props["지역"] = {"rich_text": [{"text": {"content": job.location[:200]}}]}
     if job.url:
         props["URL"] = {"url": job.url}
-    if job.posted:
+    if job.posted and _is_iso(job.posted):
         props["등록일"] = {"date": {"start": job.posted[:10]}}
+    if job.deadline and _is_iso(job.deadline):
+        props["마감일"] = {"date": {"start": job.deadline[:10]}}
+    if job.years_required is not None:
+        props["연차요구"] = {"number": job.years_required}
     if job.matched_keywords:
         props["키워드"] = {
             "multi_select": [{"name": k[:40]} for k in job.matched_keywords[:8]]
         }
+    if job.flags:
+        props["플래그"] = {"multi_select": [{"name": f} for f in job.flags]}
     return props
+
+
+def _is_iso(value: str) -> bool:
+    """Notion date에 넣을 수 있는 YYYY-MM-DD 형태인지(상시/텍스트 마감 제외)."""
+    import re
+
+    return bool(re.match(r"^\d{4}-\d{2}-\d{2}", value or ""))
 
 
 def send(jobs: list[Job]) -> int:

@@ -49,6 +49,7 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
                         url=f"https://www.wanted.co.kr/wd/{jid}",
                         location=addr.get("location") or addr.get("full_location") or "",
                         posted=item.get("confirm_period") or None,
+                        deadline=(item.get("due_time") or None),
                         description=item.get("position", ""),
                     )
                 )
