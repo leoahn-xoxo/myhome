@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 
 from .browser import Browser
@@ -77,6 +78,9 @@ def run(dry_run: bool = False, use_dedupe: bool = True, headed: bool = False) ->
     cfg = load_config()
     with Browser(cfg, headless=not headed) as browser:
         raw = collect(browser, cfg)
+    from collections import Counter
+    by_src = Counter(j.source for j in raw)
+    log.info("소스별 수집: %s", dict(by_src) or "0건")
     log.info("총 %d건 수집(중복 포함)", len(raw))
 
     jobs = dedupe(raw)
@@ -110,11 +114,19 @@ def main() -> int:
     p.add_argument("--dry-run", action="store_true", help="발송 없이 콘솔 출력")
     p.add_argument("--no-dedupe", action="store_true", help="신규 필터 끄기")
     p.add_argument("--headed", action="store_true", help="창 표시(디버깅)")
+    p.add_argument("--debug", action="store_true",
+                   help="창 표시 + 각 사이트 첫 화면을 data/debug에 캡처(셀렉터 튜닝용)")
     args = p.parse_args()
     load_env()
+    if args.debug:
+        os.environ["JOBAGENT_DEBUG"] = "1"
     if args.login:
         return login_flow(load_config())
-    return run(dry_run=args.dry_run, use_dedupe=not args.no_dedupe, headed=args.headed)
+    return run(
+        dry_run=args.dry_run or args.debug,   # debug는 발송 없이 진단만
+        use_dedupe=not (args.no_dedupe or args.debug),
+        headed=args.headed or args.debug,
+    )
 
 
 if __name__ == "__main__":

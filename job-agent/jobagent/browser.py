@@ -48,14 +48,20 @@ class Browser:
         self.user_data_dir.mkdir(parents=True, exist_ok=True)
         self._pw = sync_playwright().start()
         log.info("크롬 실행: profile=%s headless=%s", self.user_data_dir, self.headless)
-        self.context = self._pw.chromium.launch_persistent_context(
+        opts = dict(
             user_data_dir=str(self.user_data_dir),
-            channel=self.channel,
             headless=self.headless,
             viewport={"width": 1366, "height": 900},
             locale="ko-KR",
             args=["--disable-blink-features=AutomationControlled"],
         )
+        try:
+            self.context = self._pw.chromium.launch_persistent_context(channel=self.channel, **opts)
+        except Exception as e:  # noqa: BLE001
+            # 설치된 Chrome이 없으면 Playwright 번들 chromium으로 폴백
+            log.warning("channel=%s 실행 실패(%s) → 번들 chromium으로 폴백 "
+                        "(로그인 세션은 유지됨). `playwright install chromium` 권장", self.channel, e)
+            self.context = self._pw.chromium.launch_persistent_context(**opts)
         return self
 
     def __exit__(self, *exc):

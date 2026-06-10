@@ -6,8 +6,30 @@ jobagent.browser.Browser 인스턴스로 .new_page() / .request 를 제공한다
 from __future__ import annotations
 
 import logging
+import os
+import re
+from pathlib import Path
 
 log = logging.getLogger("jobagent.sources")
+
+DEBUG_DIR = Path(__file__).resolve().parents[2] / "data" / "debug"
+
+
+def debug_dump(page, tag: str) -> None:
+    """JOBAGENT_DEBUG=1 일 때 해당 페이지의 스크린샷+HTML을 저장.
+
+    셀렉터 튜닝용. 0건이 나온 사이트의 실제 화면을 캡처해 원인을 파악한다.
+    """
+    if os.environ.get("JOBAGENT_DEBUG") != "1":
+        return
+    DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+    safe = re.sub(r"[^\w.-]", "_", tag)[:60]
+    try:
+        page.screenshot(path=str(DEBUG_DIR / f"{safe}.png"), full_page=True)
+        (DEBUG_DIR / f"{safe}.html").write_text(page.content(), encoding="utf-8")
+        log.info("debug 캡처 저장: data/debug/%s.{png,html}", safe)
+    except Exception as e:  # noqa: BLE001
+        log.warning("debug 캡처 실패(%s): %s", tag, e)
 
 # 로그인 세션을 보유한 사이트 도메인 → 최초 로그인 시 방문할 URL
 LOGIN_URLS = {

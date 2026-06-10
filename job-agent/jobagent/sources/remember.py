@@ -10,7 +10,7 @@ import logging
 from urllib.parse import quote
 
 from ..models import Job
-from .base import safe_text, settle
+from .base import debug_dump, safe_text, settle
 
 log = logging.getLogger("jobagent.sources.remember")
 
@@ -59,6 +59,7 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
         try:
             page.goto(RECOMMEND, wait_until="domcontentloaded", timeout=25000)
             settle(page, 2500)
+            debug_dump(page, "remember")
             if "login" in page.url or "signin" in page.url:
                 log.info("remember: 로그인 필요 → `--login`으로 1회 로그인 후 재시도")
                 return []

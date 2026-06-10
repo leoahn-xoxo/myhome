@@ -82,8 +82,25 @@ PC가 꺼져 있던 시간은 다음 부팅 후 1회 보충 실행됩니다.
 python -m jobagent.main             # 일일 실행(headless, 발송)
 python -m jobagent.main --dry-run   # 발송 없이 결과 JSON 출력
 python -m jobagent.main --headed    # 창을 보면서 실행(셀렉터 확인용)
+python -m jobagent.main --debug     # 창 표시 + 각 사이트 첫 화면 캡처(발송 안 함)
 python -m jobagent.main --no-dedupe # 신규 필터 끄고 전체 출력
 ```
+
+## 첫 실행 점검 절차 (셀렉터 튜닝)
+
+처음에는 로그인 직후 한 번 진단을 돌려 각 사이트가 실제로 긁히는지 확인하세요.
+
+```powershell
+scripts\login.bat                  # ① 5개 사이트 로그인
+python -m jobagent.main --debug    # ② 창 뜨고 각 사이트 첫 화면을 캡처
+```
+- 콘솔 끝에 `소스별 수집: {'wanted': 12, 'saramin': 8, ...}` 형태로 사이트별 건수가 찍힙니다.
+- **0건인 사이트**는 `data/debug/<사이트>.png` 와 `.html` 이 저장됩니다.
+- 이 파일(스크린샷/HTML)을 공유하면 해당 사이트의 현재 마크업에 맞춰
+  셀렉터(소스 파일의 `query_selector_all(...)` 부분)를 정확히 고칠 수 있습니다.
+
+> 사이트들은 로그인 벽·동적 로딩·A/B 마크업이 있어 첫 1회 튜닝이 거의 필요합니다.
+> `data/debug/` 는 git에 올라가지 않습니다.
 
 ## 폴더 구조
 ```

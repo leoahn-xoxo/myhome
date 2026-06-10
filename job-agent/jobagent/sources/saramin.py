@@ -9,7 +9,7 @@ import logging
 from urllib.parse import quote
 
 from ..models import Job
-from .base import safe_text, settle
+from .base import debug_dump, safe_text, settle
 
 log = logging.getLogger("jobagent.sources.saramin")
 
@@ -20,10 +20,12 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
     page = browser.new_page()
     try:
-        for q in queries:
+        for i, q in enumerate(queries):
             try:
                 page.goto(SEARCH.format(q=quote(q)), wait_until="domcontentloaded", timeout=25000)
                 settle(page)
+                if i == 0:
+                    debug_dump(page, "saramin")
             except Exception as e:  # noqa: BLE001
                 log.warning("saramin 이동 실패 (%s): %s", q, e)
                 continue
