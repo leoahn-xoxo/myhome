@@ -95,12 +95,23 @@ scripts\login.bat                  # ① 5개 사이트 로그인
 python -m jobagent.main --debug    # ② 창 뜨고 각 사이트 첫 화면을 캡처
 ```
 - 콘솔 끝에 `소스별 수집: {'wanted': 12, 'saramin': 8, ...}` 형태로 사이트별 건수가 찍힙니다.
-- **0건인 사이트**는 `data/debug/<사이트>.png` 와 `.html` 이 저장됩니다.
-- 이 파일(스크린샷/HTML)을 공유하면 해당 사이트의 현재 마크업에 맞춰
-  셀렉터(소스 파일의 `query_selector_all(...)` 부분)를 정확히 고칠 수 있습니다.
+- 각 사이트마다 `data/debug/<사이트>.{png, html, outline.txt}` 3종이 저장됩니다.
+  - **outline.txt** — 공고 카드 후보 요소의 tag/class/text만 추린 작은 파일. **이걸 공유하면 됨**(붙여넣기 쉬움)
+  - png — 로그인 여부·화면 확인용 / html — 전체 마크업(대용량, 보통 불필요)
+
+### 캡처 공유 방법 (둘 중 하나)
+```powershell
+# (간편) outline.txt 내용을 그대로 복사해 채팅에 붙여넣기
+type data\debug\linkedin.outline.txt
+
+# (전체) 디버그 파일을 브랜치에 올려서 직접 보게 하기
+git add -f data\debug
+git commit -m "debug capture"
+git push
+```
 
 > 사이트들은 로그인 벽·동적 로딩·A/B 마크업이 있어 첫 1회 튜닝이 거의 필요합니다.
-> `data/debug/` 는 git에 올라가지 않습니다.
+> 평소엔 `data/debug/` 가 git에 올라가지 않습니다(`-f`로 강제 추가).
 
 ## 폴더 구조
 ```

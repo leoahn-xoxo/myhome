@@ -15,10 +15,34 @@ log = logging.getLogger("jobagent.sources")
 DEBUG_DIR = Path(__file__).resolve().parents[2] / "data" / "debug"
 
 
-def debug_dump(page, tag: str) -> None:
-    """JOBAGENT_DEBUG=1 일 때 해당 페이지의 스크린샷+HTML을 저장.
+# 공고 카드일 가능성이 높은 요소만 추려 tag+class+text를 뽑는 JS.
+# 전체 HTML 대신 이 작은 outline 파일이 셀렉터 튜닝의 핵심 단서가 된다.
+_OUTLINE_JS = r"""
+() => {
+  const sel = "a[href*='job'],a[href*='posting'],a[href*='/wd/'],a[href*='rec_idx']," +
+              "li,article,[class*='card'],[class*='Card'],[class*='item'],[class*='post']";
+  const els = document.querySelectorAll(sel);
+  const out = [], seen = new Set();
+  for (const el of els) {
+    if (out.length >= 70) break;
+    const cls = (el.className && el.className.toString) ? el.className.toString() : "";
+    const txt = (el.innerText || "").trim().replace(/\s+/g, " ").slice(0, 90);
+    if (!txt) continue;
+    const key = el.tagName + "|" + cls + "|" + txt;
+    if (seen.has(key)) continue; seen.add(key);
+    const href = (el.getAttribute && el.getAttribute("href")) || "";
+    out.push(`<${el.tagName.toLowerCase()} class="${cls}"` + (href ? ` href="${href}"` : "") + `> ${txt}`);
+  }
+  return "URL: " + location.href + "\n" + out.join("\n");
+}
+"""
 
-    셀렉터 튜닝용. 0건이 나온 사이트의 실제 화면을 캡처해 원인을 파악한다.
+
+def debug_dump(page, tag: str) -> None:
+    """JOBAGENT_DEBUG=1 일 때 화면 캡처(png) + 전체 HTML + 핵심 outline(txt) 저장.
+
+    셀렉터 튜닝용. outline.txt 는 공고 카드 후보 요소의 tag/class/text만 추린
+    작은 파일이라 그대로 붙여넣어 공유하기 쉽다.
     """
     if os.environ.get("JOBAGENT_DEBUG") != "1":
         return
@@ -27,7 +51,12 @@ def debug_dump(page, tag: str) -> None:
     try:
         page.screenshot(path=str(DEBUG_DIR / f"{safe}.png"), full_page=True)
         (DEBUG_DIR / f"{safe}.html").write_text(page.content(), encoding="utf-8")
-        log.info("debug 캡처 저장: data/debug/%s.{png,html}", safe)
+        try:
+            outline = page.evaluate(_OUTLINE_JS)
+            (DEBUG_DIR / f"{safe}.outline.txt").write_text(outline, encoding="utf-8")
+        except Exception as e:  # noqa: BLE001
+            log.warning("debug outline 실패(%s): %s", tag, e)
+        log.info("debug 캡처 저장: data/debug/%s.{png,html,outline.txt}", safe)
     except Exception as e:  # noqa: BLE001
         log.warning("debug 캡처 실패(%s): %s", tag, e)
 
