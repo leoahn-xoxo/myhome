@@ -71,6 +71,29 @@ SCHEMA = {
             ]
         }
     },
+    "지원여부": {
+        "select": {
+            "options": [
+                {"name": "미지원", "color": "gray"},
+                {"name": "지원예정", "color": "yellow"},
+                {"name": "지원완료", "color": "green"},
+                {"name": "관심없음", "color": "default"},
+            ]
+        }
+    },
+    "결과": {
+        "select": {
+            "options": [
+                {"name": "미정", "color": "gray"},
+                {"name": "서류접수", "color": "blue"},
+                {"name": "서류합격", "color": "green"},
+                {"name": "면접중", "color": "yellow"},
+                {"name": "최종합격", "color": "purple"},
+                {"name": "불합격", "color": "red"},
+                {"name": "포기", "color": "default"},
+            ]
+        }
+    },
 }
 
 

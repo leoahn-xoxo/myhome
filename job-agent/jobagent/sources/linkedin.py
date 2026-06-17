@@ -9,7 +9,7 @@ import logging
 from urllib.parse import quote
 
 from ..models import Job
-from .base import debug_dump, safe_text, settle
+from .base import debug_dump, lazy_scroll, safe_text, settle
 
 log = logging.getLogger("jobagent.sources.linkedin")
 
@@ -18,14 +18,16 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
     page = browser.new_page()
     try:
-        for i, q in enumerate(queries):
+        # 링크드인은 anti-bot이 민감 → 검색어를 일부만(앞 4개) 쓰고 완만하게 진행
+        for i, q in enumerate(queries[:4]):
             url = (
                 "https://www.linkedin.com/jobs/search/?"
                 f"keywords={quote(q)}&location={quote('South Korea')}&f_TPR=r604800"
             )
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=25000)
-                settle(page)
+                settle(page, 2000)
+                lazy_scroll(page)          # 지연 로딩 카드 끌어오기
                 if i == 0:
                     debug_dump(page, "linkedin")
             except Exception as e:  # noqa: BLE001

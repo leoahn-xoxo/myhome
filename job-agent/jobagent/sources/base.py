@@ -55,3 +55,17 @@ def settle(page, ms: int = 1500):
     except Exception:  # noqa: BLE001
         pass
     page.wait_for_timeout(ms)
+
+
+def lazy_scroll(page, times: int = 5, dy: int = 1600, pause: int = 900):
+    """지연 로딩(lazy-load) 목록을 끝까지 끌어오기 위해 천천히 스크롤.
+
+    링크드인·리멤버처럼 스크롤해야 카드가 더 붙는 SPA에 필요. 완만한 속도로
+    움직여 anti-bot 감지를 피한다.
+    """
+    for _ in range(times):
+        try:
+            page.mouse.wheel(0, dy)
+        except Exception:  # noqa: BLE001
+            break
+        page.wait_for_timeout(pause)
