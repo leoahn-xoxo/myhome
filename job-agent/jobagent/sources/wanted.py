@@ -21,7 +21,7 @@ _FETCH = """async (url) => {
 
 def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    page = browser.new_page()
+    page = browser.shared_page()
     try:
         page.goto("https://www.wanted.co.kr/", wait_until="domcontentloaded", timeout=20000)
         for q in queries:
@@ -54,6 +54,6 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
                     )
                 )
     finally:
-        page.close()
+        pass  # 공유 페이지이므로 닫지 않음
     log.info("wanted: %d건 수집", len(jobs))
     return jobs

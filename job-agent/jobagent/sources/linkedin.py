@@ -16,7 +16,7 @@ log = logging.getLogger("jobagent.sources.linkedin")
 
 def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    page = browser.new_page()
+    page = browser.shared_page()
     try:
         # 링크드인은 anti-bot이 민감 → 검색어를 일부만(앞 4개) 쓰고 완만하게 진행
         for i, q in enumerate(queries[:4]):
@@ -69,6 +69,6 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
                     )
                 )
     finally:
-        page.close()
+        pass  # 공유 페이지이므로 닫지 않음
     log.info("linkedin: %d건 수집", len(jobs))
     return jobs

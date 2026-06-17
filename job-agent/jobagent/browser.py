@@ -44,6 +44,7 @@ class Browser:
         self.headless = b.get("headless", True) if headless is None else headless
         self._pw = None
         self.context = None
+        self._page = None
 
     def __enter__(self) -> "Browser":
         self.user_data_dir.mkdir(parents=True, exist_ok=True)
@@ -61,25 +62,47 @@ class Browser:
             locale="ko-KR",
             args=args,
         )
-        try:
-            self.context = self._pw.chromium.launch_persistent_context(channel=self.channel, **opts)
-        except Exception as e:  # noqa: BLE001
-            # 설치된 Chrome이 없으면 Playwright 번들 chromium으로 폴백
-            log.warning("channel=%s 실행 실패(%s) → 번들 chromium으로 폴백 "
-                        "(로그인 세션은 유지됨). `playwright install chromium` 권장", self.channel, e)
+        # channel을 비우거나 chromium/bundled 로 두면 Playwright 전용 Chromium 사용
+        # → 켜져 있는 진짜 Chrome(chrome.exe)과 충돌하지 않는다(권장).
+        use_channel = self.channel if self.channel not in (None, "", "chromium", "bundled") else None
+        if use_channel:
+            try:
+                self.context = self._pw.chromium.launch_persistent_context(channel=use_channel, **opts)
+            except Exception as e:  # noqa: BLE001
+                log.warning("channel=%s 실행 실패(%s) → 번들 chromium으로 폴백 "
+                            "(`playwright install chromium` 필요)", use_channel, e)
+                self.context = self._pw.chromium.launch_persistent_context(**opts)
+        else:
             self.context = self._pw.chromium.launch_persistent_context(**opts)
+        log.info("브라우저 엔진: %s", use_channel or "bundled chromium")
         return self
 
     def __exit__(self, *exc):
+        # 브라우저가 이미 닫혔어도 종료 정리는 조용히 마친다.
         try:
             if self.context:
                 self.context.close()
+        except Exception:  # noqa: BLE001
+            pass
         finally:
-            if self._pw:
-                self._pw.stop()
+            try:
+                if self._pw:
+                    self._pw.stop()
+            except Exception:  # noqa: BLE001
+                pass
 
     def new_page(self):
         return self.context.new_page()
+
+    def shared_page(self):
+        """소스들이 공유하는 단일 페이지. 새 탭을 반복 생성하다 깨지는 것을 막는다.
+
+        persistent context의 초기 about:blank 페이지를 재사용하고, 닫혔으면 새로 연다.
+        """
+        if self._page is None or self._page.is_closed():
+            pages = [p for p in self.context.pages if not p.is_closed()]
+            self._page = pages[0] if pages else self.context.new_page()
+        return self._page
 
     @property
     def request(self):

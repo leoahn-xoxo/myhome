@@ -18,7 +18,7 @@ SEARCH = "https://www.saramin.co.kr/zf_user/search/recruit?searchType=search&sea
 
 def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    page = browser.new_page()
+    page = browser.shared_page()
     try:
         for i, q in enumerate(queries):
             try:
@@ -54,6 +54,6 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
                     )
                 )
     finally:
-        page.close()
+        pass  # 공유 페이지이므로 닫지 않음
     log.info("saramin: %d건 수집", len(jobs))
     return jobs

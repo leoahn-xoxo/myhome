@@ -25,7 +25,10 @@ browser:
                         # leoflyagain 계정이면 보통 "Profile 1"/"Profile 2" 등.
                         # 정확한 값은 크롬에서 해당 계정으로 chrome://version → "프로필 경로" 확인.
                         # ※ 실제 프로필 사용 시 실행 중에는 크롬을 완전히 종료해야 함(프로필 잠금).
-  channel: chrome       # 설치된 Chrome 사용(별도 다운로드 불필요)
+  channel: chromium     # chromium = Playwright 전용 브라우저(권장). 켜져있는 진짜
+                        #   크롬과 충돌하지 않음 → 방식①(전용 프로필+--login)에 적합.
+                        # chrome = 설치된 진짜 크롬. 방식②(leoflyagain 프로필 재사용)에만
+                        #   필요하며, 실행 중 크롬을 반드시 종료해야 함.
   headless: true        # 일일 실행은 true, --login/--headed 시 자동으로 창 표시
 
 # 소스별 on/off — 모두 로그인된 크롬으로 직접 수집

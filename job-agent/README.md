@@ -169,6 +169,17 @@ job-agent/
 플래그(경력적합/과스펙/대기업/스타트업/마감임박)는 이메일 배지와 Notion `플래그`
 속성으로 함께 표시됩니다.
 
+## 문제 해결
+
+**`Target page, context or browser has been closed` / `Failed to open a new tab`**
+→ 실행 중인 진짜 크롬(`chrome.exe`)과 충돌한 경우입니다. 둘 중 하나로 해결:
+- (권장) `config.yaml`에서 `browser.channel: chromium` — Playwright 전용 브라우저라
+  켜져 있는 크롬과 충돌하지 않습니다. `playwright install chromium` 먼저 실행.
+- 또는 `channel: chrome`을 쓰려면 **실행 전에 크롬을 완전히 종료**하세요.
+
+**Python 3.14에서 불안정하면** → Playwright는 3.12~3.13에서 가장 안정적입니다.
+계속 브라우저가 죽으면 Python 3.12/3.13 설치 후 그 버전으로 `pip install`을 다시 하세요.
+
 ## 알아두기 (솔직한 메모)
 
 - **로컬 전용**: 로그인된 크롬은 이 PC에만 있으므로 클라우드(GitHub Actions)로는

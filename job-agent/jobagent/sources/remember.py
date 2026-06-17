@@ -53,7 +53,7 @@ def _scrape(page, limit: int) -> list[Job]:
 
 def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    page = browser.new_page()
+    page = browser.shared_page()
     try:
         # 1) 로그인 여부 확인 겸 추천 포지션
         try:
@@ -78,6 +78,6 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
             except Exception as e:  # noqa: BLE001
                 log.info("remember 검색 실패 (%s): %s", q, e)
     finally:
-        page.close()
+        pass  # 공유 페이지이므로 닫지 않음
     log.info("remember: %d건 수집", len(jobs))
     return jobs

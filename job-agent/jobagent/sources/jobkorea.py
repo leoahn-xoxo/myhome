@@ -14,7 +14,7 @@ SEARCH = "https://www.jobkorea.co.kr/Search/?stext={q}&tabType=recruit&Page_No=1
 
 def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
     jobs: list[Job] = []
-    page = browser.new_page()
+    page = browser.shared_page()
     try:
         for i, q in enumerate(queries):
             try:
@@ -52,6 +52,6 @@ def fetch(browser, queries: list[str], limit: int = 20, **_) -> list[Job]:
                     )
                 )
     finally:
-        page.close()
+        pass  # 공유 페이지이므로 닫지 않음
     log.info("jobkorea: %d건 수집", len(jobs))
     return jobs
