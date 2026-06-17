@@ -30,13 +30,33 @@ playwright install chromium      # (Chrome 미설치 시에만. 설치돼 있으
 ```
 > `config.yaml`의 `browser.channel: chrome`은 **이미 설치된 크롬**을 씁니다.
 
-## 1) 최초 1회 — 사이트 로그인
+## 1) 사이트 로그인 — 두 가지 방식 중 선택
 
+### 방식 ①: 전용 프로필 + 1회 로그인 (기본, 권장)
 ```powershell
 scripts\login.bat          # 또는: python -m jobagent.main --login
 ```
 탭으로 원티드·링크드인·사람인·잡코리아·리멤버가 열립니다. 각각 로그인
 (자동 로그인 체크 권장) 후 터미널에 돌아와 **Enter** → 세션 저장 완료.
+충돌이 없어 스케줄 실행에 가장 안정적입니다.
+
+### 방식 ②: 내 크롬 계정(leoflyagain) 그대로 쓰기 — 재로그인 불필요
+평소 크롬에서 `leoflyagain@gmail.com`으로 이미 로그인돼 있다면 그 프로필을 직접 가리킬 수 있습니다.
+
+1. 크롬에서 **leoflyagain 계정으로 전환** → 주소창에 `chrome://version` → **"프로필 경로"** 확인
+   - 예: `C:\Users\Leo\AppData\Local\Google\Chrome\User Data\Profile 1`
+   - 여기서 `User Data` 까지가 **user_data_dir**, 마지막 `Profile 1` 이 **profile_directory**.
+2. `config.yaml` 수정:
+   ```yaml
+   browser:
+     user_data_dir: "C:/Users/Leo/AppData/Local/Google/Chrome/User Data"
+     profile_directory: "Profile 1"
+   ```
+3. 끝. `--login` 없이 바로 `python -m jobagent.main --debug` 실행하면 기존 로그인을 그대로 씁니다.
+
+> ⚠️ **방식 ②는 실행 중 크롬을 완전히 종료**해야 합니다(프로필 잠금). 따라서 매일 8시
+> 자동 실행 시 그 시각에 크롬이 떠 있으면 충돌할 수 있습니다. 자동화 안정성을 최우선으로
+> 한다면 방식 ①(전용 프로필)을 권장합니다. "재로그인이 귀찮다"가 우선이면 방식 ②.
 
 ## 2) 발송 설정 — `.env`
 

@@ -18,9 +18,13 @@ queries:
 
 # 로그인된 크롬 세션 설정 (A안: Playwright + 실제/전용 프로필)
 browser:
-  user_data_dir: auto   # auto = 전용 자동화 프로필(권장).
-                        # 실제 크롬 프로필을 쓰려면 경로 지정 + 크롬 완전 종료 필요.
-                        # 예) "C:/Users/<이름>/AppData/Local/Google/Chrome/User Data"
+  user_data_dir: auto   # auto = 전용 자동화 프로필(권장, 재로그인 필요).
+                        # 실제 크롬 로그인을 그대로 쓰려면 크롬 User Data 폴더 지정:
+                        #   "C:/Users/<이름>/AppData/Local/Google/Chrome/User Data"
+  profile_directory:    # 위 폴더 안에서 쓸 계정 프로필. 비우면 전용 프로필.
+                        # leoflyagain 계정이면 보통 "Profile 1"/"Profile 2" 등.
+                        # 정확한 값은 크롬에서 해당 계정으로 chrome://version → "프로필 경로" 확인.
+                        # ※ 실제 프로필 사용 시 실행 중에는 크롬을 완전히 종료해야 함(프로필 잠금).
   channel: chrome       # 설치된 Chrome 사용(별도 다운로드 불필요)
   headless: true        # 일일 실행은 true, --login/--headed 시 자동으로 창 표시
 

@@ -39,6 +39,7 @@ class Browser:
         b = cfg.get("browser", {})
         udd = b.get("user_data_dir", "auto")
         self.user_data_dir = _default_profile_dir() if udd in (None, "auto") else Path(udd)
+        self.profile_directory = b.get("profile_directory") or None  # 예: "Profile 1"
         self.channel = b.get("channel", "chrome")
         self.headless = b.get("headless", True) if headless is None else headless
         self._pw = None
@@ -47,13 +48,18 @@ class Browser:
     def __enter__(self) -> "Browser":
         self.user_data_dir.mkdir(parents=True, exist_ok=True)
         self._pw = sync_playwright().start()
-        log.info("크롬 실행: profile=%s headless=%s", self.user_data_dir, self.headless)
+        log.info("크롬 실행: dir=%s profile=%s headless=%s",
+                 self.user_data_dir, self.profile_directory or "(persistent)", self.headless)
+        args = ["--disable-blink-features=AutomationControlled"]
+        if self.profile_directory:
+            # 실제 크롬의 특정 계정 프로필(예: leoflyagain = "Profile 1")을 그대로 사용
+            args.append(f"--profile-directory={self.profile_directory}")
         opts = dict(
             user_data_dir=str(self.user_data_dir),
             headless=self.headless,
             viewport={"width": 1366, "height": 900},
             locale="ko-KR",
-            args=["--disable-blink-features=AutomationControlled"],
+            args=args,
         )
         try:
             self.context = self._pw.chromium.launch_persistent_context(channel=self.channel, **opts)
